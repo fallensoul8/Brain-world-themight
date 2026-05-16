@@ -7,7 +7,7 @@ export function FactionPanel() {
   const [newFaction, setNewFaction] = useState({ name: '', goal: '' })
   const factions = factionManager.getState()
 
-  useEffect(() => simulationEngine.subscribe(() => refresh(n => n + 1)), [])
+  useEffect(() => { const unsub = simulationEngine.subscribe(() => refresh(n => n + 1)); return () => unsub(); }, [])
 
   const createFaction = () => {
     if (!newFaction.name.trim()) return

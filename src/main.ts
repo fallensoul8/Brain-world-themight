@@ -116,11 +116,10 @@ async function main() {
   let implicitChatSeq = 0
 
   if (!useMock) {
-    bridgeModule = await import('./bridge/index.ts')
+    // Simulation mode - load bridge dynamically
     const wsUrl = params.get('ws') || 'ws://localhost:55211'
-
+    bridgeModule = await import('./bridge/index.ts')
     const { DirectorBridge } = bridgeModule
-    const director = new DirectorBridge()
 
     const ws = new WebSocket(wsUrl)
     townWs = ws

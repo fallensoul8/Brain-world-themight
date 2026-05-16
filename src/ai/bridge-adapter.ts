@@ -1,4 +1,4 @@
-import type { NPCWorldState, NPCInteraction, NPCAction, NPCDecisionInput } from './types.js';
+import type { NPCWorldState, NPCInteraction, NPCAction } from './types.js';
 import { getNPCPipeline } from './decision-pipeline.js';
 import { getNPCMemory } from './memory.js';
 import { getAISystem } from './system.js';
@@ -7,7 +7,7 @@ import { getAISystem } from './system.js';
  * AI ↔ Agentshire World Bridge
  * Adapts world state → AI reasoning → world actions
  */
-export class AIBridgeAdapter implements AIBridgeAdapter {
+export class AIBridgeAdapter {
   private npcPersonalities = new Map<string, string>();
   private npcWorldStates = new Map<string, NPCWorldState>();
   private worldStateProvider: WorldStateProvider | null = null;

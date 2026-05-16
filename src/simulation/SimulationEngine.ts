@@ -1,63 +1,35 @@
-import { getAISystem } from '../ai/system'
-import type { NPCAction, NPCWorldState } from '../ai/types'
+import { getNPCMemory, getNPCPipeline } from '../ai'
+import type { NPCAction } from '../ai'
 
 export interface NPCRecord {
-  id: string
-  name: string
-  personality: string
-  role: string
-  faction?: string
-  state: NPCWorldState
-  lastAction?: NPCAction
-  memoryCount: number
-  tickCount: number
+  id: string; name: string; personality: string; role: string; faction?: string
+  state: { npcId: string; position: { x: number; y: number; z: number }; inventory: string[]; relationships: Record<string, number>; status: string }
+  lastAction?: NPCAction; memoryCount: number; tickCount: number
 }
 
 export interface SimulationState {
-  running: boolean
-  tickRate: number
-  tick: number
-  npcs: NPCRecord[]
-  activityLog: string[]
+  running: boolean; tickRate: number; tick: number; npcs: NPCRecord[]; activityLog: string[]
 }
 
 type Listener = (state: SimulationState) => void
 
 export class SimulationEngine {
   private state: SimulationState = {
-    running: false,
-    tickRate: 2000,
-    tick: 0,
-    npcs: [],
-    activityLog: [],
+    running: false, tickRate: 2000, tick: 0, npcs: [], activityLog: [],
   }
   private timer: ReturnType<typeof setInterval> | null = null
   private listeners: Set<Listener> = new Set()
-  private ai: Awaited<ReturnType<typeof getAISystem>> | null = null
-
-  async init() {
-    this.ai = await getAISystem({ ollamaUrl: 'http://localhost:11434' })
-    await this.ai.initialize()
-    this.notify()
-  }
 
   addNPC(id: string, name: string, personality: string, role: string, faction?: string) {
     if (this.state.npcs.find(n => n.id === id)) return
     const npc: NPCRecord = {
       id, name, personality, role, faction,
-      state: {
-        npcId: id,
-        position: { x: Math.random() * 100 - 50, y: 0, z: Math.random() * 100 - 50 },
-        inventory: [],
-        relationships: {},
-        status: 'idle',
-      },
-      memoryCount: 0,
-      tickCount: 0,
+      state: { npcId: id, position: { x: Math.random() * 100 - 50, y: 0, z: Math.random() * 100 - 50 }, inventory: [], relationships: {}, status: 'idle' },
+      memoryCount: 0, tickCount: 0,
     }
     this.state.npcs.push(npc)
-    this.ai?.getNPCMemory(id)
-    this.log(`🧑 ${name} joined the world`)
+    getNPCMemory(id) // initialize memory store
+    this.log(`🧑 ${name} the ${role} joined the world`)
     this.notify()
   }
 
@@ -79,10 +51,7 @@ export class SimulationEngine {
 
   setTickRate(ms: number) {
     this.state.tickRate = ms
-    if (this.state.running) {
-      this.stop()
-      this.start()
-    }
+    if (this.state.running) { this.stop(); this.start() }
     this.notify()
   }
 
@@ -90,7 +59,8 @@ export class SimulationEngine {
     this.state.tick++
     for (const npc of this.state.npcs) {
       npc.tickCount++
-      const pipeline = this.ai?.getNPCPipeline(npc.id)
+      const pipeline = getNPCPipeline(npc.id)
+      const memory = getNPCMemory(npc.id)
       if (!pipeline) continue
 
       try {
@@ -98,24 +68,17 @@ export class SimulationEngine {
           npcId: npc.id,
           perception: {
             nearbyNpcs: this.state.npcs.filter(n => n.id !== npc.id).map(n => n.id),
-            nearbyItems: npc.state.inventory,
-            location: `(${npc.state.position.x.toFixed(0)}, ${npc.state.position.z.toFixed(0)})`,
+            nearbyItems: npc.state.inventory, location: `(${npc.state.position.x.toFixed(0)}, ${npc.state.position.z.toFixed(0)})`,
             timeOfDay: 'day',
           },
           context: `${npc.name} the ${npc.role} is ${npc.state.status}`,
         })
         npc.lastAction = action
         npc.state.status = action.type === 'move' ? 'moving' : action.type === 'think' ? 'thinking' : 'interacting'
-        this.log(`🧠 ${npc.name}: ${action.type} → ${action.content || action.target || '...'}`)
-      } catch {
-        npc.state.status = 'idle'
-      }
+        this.log(`🧠 ${npc.name}: ${action.type}${action.target ? ' → ' + action.target : ''}`)
+      } catch { npc.state.status = 'idle' }
 
-      const memory = this.ai?.getNPCMemory(npc.id)
-      if (memory) {
-        const stats = memory.getStats()
-        npc.memoryCount = stats.total
-      }
+      if (memory) npc.memoryCount = memory.getStats().total
     }
     this.notify()
   }
@@ -128,11 +91,6 @@ export class SimulationEngine {
   subscribe(fn: Listener) { this.listeners.add(fn); return () => this.listeners.delete(fn) }
   getState(): SimulationState { return this.state }
   private notify() { this.listeners.forEach(fn => fn({ ...this.state })) }
-
-  async shutdown() {
-    this.stop()
-    await this.ai?.shutdown()
-  }
 }
 
 export const simulationEngine = new SimulationEngine()

@@ -12,11 +12,11 @@ const NPC_TEMPLATES = [
 
 export function SimulationDashboard() {
   const [state, setState] = useState<SimulationState>(simulationEngine.getState())
-  const [init, setInit] = useState(false)
 
   useEffect(() => {
-    simulationEngine.init().then(() => setInit(true))
-    return simulationEngine.subscribe(setState)
+    simulationEngine.init()
+    const unsub = simulationEngine.subscribe(setState)
+    return () => unsub()
   }, [])
 
   const toggle = useCallback(() => {
@@ -52,8 +52,7 @@ export function SimulationDashboard() {
         <span>Tick: {state.tick}</span>
         <span>NPCs: {state.npcs.length}</span>
         <span>Rate: {state.tickRate}ms</span>
-        <span>Status: {state.running ? '🟢 Running' : '🔴 Stopped'}</span>
-        {!init && <span className="text-yellow-400">Initializing AI...</span>}
+        {!state.running && <span className="text-yellow-400">🔴 Stopped</span>}
       </div>
 
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
