@@ -1,4 +1,4 @@
-import type { AIBridgeAdapter, NPCWorldState, NPCInteraction, NPCAction, NPCDecisionInput } from './types.js';
+import type { NPCWorldState, NPCInteraction, NPCAction, NPCDecisionInput } from './types.js';
 import { getNPCPipeline } from './decision-pipeline.js';
 import { getNPCMemory } from './memory.js';
 import { getAISystem } from './system.js';

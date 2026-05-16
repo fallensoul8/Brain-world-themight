@@ -32,10 +32,13 @@ export class OllamaClient implements LLMProvider {
    */
   async isHealthy(): Promise<boolean> {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
       const response = await fetch(`${this.endpoint}/api/tags`, {
         method: 'GET',
-        timeout: 5000,
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       if (!response.ok) {
         console.warn(`[ollama] Health check failed: ${response.status}`);
         return false;

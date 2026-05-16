@@ -1,13 +1,21 @@
-import type { AISystemManager, SystemHealth, MemoryStore, LLMProvider, DecisionPipeline, MultiAgentOrchestrator, FactionCrew, AIBridgeAdapter } from './types.js';
+import type { SystemHealth, MemoryStore, LLMProvider, DecisionPipeline, MultiAgentOrchestrator, FactionCrew, AIBridgeAdapter } from './types.js';
 import { OllamaClient, getOllamaClient } from './ollama.js';
 import { NPCMemory, getNPCMemory } from './memory.js';
 import { NPCDecisionPipeline, getNPCPipeline } from './decision-pipeline.js';
 
+export interface AISystemConfig {
+  ollamaEndpoint?: string;
+  ollamaModel?: string;
+  enableMemory?: boolean;
+  enablePipeline?: boolean;
+  enableOrchestrator?: boolean;
+  enableCrews?: boolean;
+}
+
 /**
  * Central AI System Manager
- * Initializes, manages, and monitors all AI subsystems
  */
-export class AISystemManager implements AISystemManager {
+export class AISystemManager {
   private llm: OllamaClient | null = null;
   private memories = new Map<string, NPCMemory>();
   private pipelines = new Map<string, NPCDecisionPipeline>();
